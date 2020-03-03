@@ -3,12 +3,14 @@
         {
             "name": "Mac",
             "includePath": [
+                "/Users/mayayaradena/Library/Arduino15/packages/esp32/tools/**",
+                "/Users/mayayaradena/Library/Arduino15/packages/esp32/hardware/esp32/1.0.4/**",
+                "/Users/mayayaradena/Library/Arduino15/packages/esp8266/tools/**",
+                "/Users/mayayaradena/Library/Arduino15/packages/esp8266/hardware/esp8266/2.6.3/**",
                 "/Users/mayayaradena/Library/Arduino15/packages/arduino/tools/**",
                 "/Users/mayayaradena/Library/Arduino15/packages/arduino/hardware/avr/1.8.2/**"
             ],
-            "forcedInclude": [
-                "/Users/mayayaradena/Library/Arduino15/packages/arduino/hardware/avr/1.8.2/cores/arduino/Arduino.h"
-            ],
+            "forcedInclude": [],
             "macFrameworkPath": [
                 "/System/Library/Frameworks",
                 "/Library/Frameworks"

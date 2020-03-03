@@ -1,6 +1,6 @@
 {
     "port": "/dev/cu.usbserial-1430",
-    "board": "arduino:avr:nano",
-    "configuration": "cpu=atmega328",
-    "sketch": "multiple_ADS1115.ino"
+    "board": "esp32:esp32:esp32doit-devkit-v1",
+    "configuration": "FlashFreq=80,UploadSpeed=115200,DebugLevel=none",
+    "sketch": "main.ino"
 }
