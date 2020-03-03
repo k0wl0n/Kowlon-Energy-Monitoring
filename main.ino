@@ -5,6 +5,28 @@
 #include <SPI.h>
 #include <ATM90E32.h>
 
+/***** Another SS PINS ****
+ * SPI	MOSI	MISO	CLK	CS
+ * VSPI	GPIO 23	GPIO 19	GPIO 18	GPIO 5
+ * HSPI	GPIO 13	GPIO 12	GPIO 14	GPIO 15
+*/
+/* For SS PIN
+0
+27
+35
+13
+14
+15
+
+CT4-CT6 (CS2):
+16
+17
+21
+22
+25
+26
+*/
+
 /***** CALIBRATION SETTINGS *****/
 /* 
  * 4485 for 60 Hz (North America)
@@ -82,12 +104,21 @@ ATM90E32 eic_second{}; //initialize the IC class
 #define BACK 9
 
 // U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, /* clock=*/13, /* data=*/11, /* CS=*/10, /* reset=*/8);
-// robotdyn Arduino Mega mini
-//SCK,MOSI,SS/CS
-//10 -> 53
-//11 -> 51
-//13 -> 52
-U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 52, 51, 53);
+
+/***
+ * Robotdyn Arduino Mega mini
+ * SCK,MOSI,SS/CS
+ * 10 -> 53
+ * 11 -> 51
+ * 13 -> 52
+ * ESP32
+ * 18 - CLK
+ * 19 - MISO
+ * 23 - MOSI
+ * 27 - SS
+*/
+
+U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 18, 23, 27);
 
 Adafruit_ADS1115 ADC_1(0x48); //Create ADS1115 object
 
@@ -98,16 +129,6 @@ const float COIL_WINDING = 2000;    // ratio of sensor 100:0.05
 
 float MAX_CURRENT_COIL = 0.0707; // Maximum current of sensor rated at  Rms 100 A
 float MAX_VOLTAGE_ADC = 15.981;  // Maximum Voltage on burden resistor calculated by burden resistor * maxAmps (33 Ohm * 0.0707 A)
-
-float voltage_adc_1 = 0.0; // The result of applying the scale factor to the raw value
-float voltage_adc_2 = 0.0;
-
-float ampere_adc_1 = 0.0; // The result of applying the scale factor to the raw value
-float ampere_adc_2 = 0.0;
-
-float power_1 = 0.0;
-float power_2 = 0.0;
-float power_total = 0.0;
 
 byte mainMenuPage = 1;
 byte mainMenuPageOld = 1;
@@ -124,6 +145,8 @@ unsigned short CurrentGainCT5 = 25498; //SCT-013-000 100A/50mA
 unsigned short CurrentGainCT6 = 25498; //SCT-013-000 100A/50mA
 float CurrentGainCT7 = 45;             //SCT-013-000 100A/50mA
 float CurrentGainCT8 = 45;             //SCT-013-000 100A/50mA
+
+//reff SCT-019-000 200/30mA 9172
 
 // board integrated ATM90E32 CircuitSetup
 // CT1   CT2  CT3  CT4  CT5  CT6
@@ -174,12 +197,6 @@ void setup()
 
 void loop()
 {
-    /*Initialise the ATM90E32 & Pass CS pin and calibrations to its library
-    the 2nd (B) current channel is not used with the split phase meter */
-    Serial.println("Start ATM90E32");
-    eic_first.begin(CS_pin, LineFreq, PGAGain, VoltageGain, CurrentGainCT1, CurrentGainCT2, CurrentGainCT3);
-    eic_second.begin(CS_pin_second, LineFreq, PGAGain, VoltageGain, CurrentGainCT4, CurrentGainCT5, CurrentGainCT6);
-
     char key;
     boolean stat = true;
 
@@ -268,6 +285,12 @@ void MenuAmpere()
 {
     Serial.println("Menu Ampere");
 
+    /*Initialise the ATM90E32 & Pass CS pin and calibrations to its library
+    the 2nd (B) current channel is not used with the split phase meter */
+    Serial.println("Start ATM90E32");
+    eic_first.begin(CS_pin, LineFreq, PGAGain, VoltageGain, CurrentGainCT1, CurrentGainCT2, CurrentGainCT3);
+    eic_second.begin(CS_pin_second, LineFreq, PGAGain, VoltageGain, CurrentGainCT4, CurrentGainCT5, CurrentGainCT6);
+
     //Get From ATM90E32
     /*Repeatedly fetch some values from the ATM90E32 */
     float voltageA_first, voltageB_first, voltageC_first;
@@ -276,6 +299,14 @@ void MenuAmpere()
     float currentCT1, currentCT2, currentCT3;
     float currentCT4, currentCT5, currentCT6;
     float totalCurrent, realPower, powerFactor, temp, freq, totalWatts;
+
+    float voltage_adc_1 = 0.0;
+    float voltage_adc_2 = 0.0;
+    float ampere_adc_1 = 0.0;
+    float ampere_adc_2 = 0.0;
+    float power_1 = 0.0;
+    float power_2 = 0.0;
+    float power_total = 0.0;
 
     unsigned short sys0 = eic_first.GetSysStatus0();  //EMMState0
     unsigned short sys1 = eic_second.GetSysStatus0(); //EMMState0
@@ -292,11 +323,11 @@ void MenuAmpere()
 
     if (LineFreq = 4485)
     {
-        totalVoltage = voltageA + voltageC; //is split single phase, so only 120v per leg
+        totalVoltage = voltageA_first + voltageB_first; //is split single phase, so only 120v per leg
     }
     else
     {
-        totalVoltage = voltageA; //voltage should be 220-240 at the AC transformer
+        totalVoltage = voltageA_first; //voltage should be 220-240 at the AC transformer
     }
 
     //get current first
@@ -320,7 +351,7 @@ void MenuAmpere()
     Serial.println("Current 5: " + String(currentCT5) + "A");
     Serial.println("Current 6: " + String(currentCT6) + "A");
 
-    Serial.println("Real Power 1: " + String(voltageA) + "V");
+    Serial.println("Real Power 1: " + String(voltageA_first) + "V");
     realPower = eic_first.GetTotalActivePower();
     powerFactor = eic_first.GetTotalPowerFactor();
 
