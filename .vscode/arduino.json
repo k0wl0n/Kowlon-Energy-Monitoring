@@ -1,6 +1,7 @@
 {
-    "port": "/dev/cu.usbserial-1430",
+    "port": "/dev/cu.SLAB_USBtoUART",
     "board": "esp32:esp32:esp32doit-devkit-v1",
     "configuration": "FlashFreq=80,UploadSpeed=115200,DebugLevel=none",
-    "sketch": "main.ino"
+    "sketch": "main.ino",
+    "output": "../output"
 }
