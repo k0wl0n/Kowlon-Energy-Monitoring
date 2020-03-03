@@ -54,9 +54,10 @@ void loop()
     Serial.println(power_3);
     Serial.print('Power N : ');
     Serial.println(power_4);
-    Serial.print('Power Total : ');
-    Serial.println(power_4);
+
     power_total = power_1 + power_2 + power_3 + power_4;
+    Serial.print('Power Total : ');
+    Serial.println(power_total);
 }
 
 double(unsigned int Samples, unsigned int phase)

@@ -16,8 +16,6 @@ byte mainMenuPage = 1;
 byte mainMenuPageOld = 1;
 byte mainMenuTotal = 7;
 
-unsigned long start;
-
 void setup()
 {
 
@@ -40,7 +38,7 @@ void loop()
         if (key)
             stat = false;
     }
-    Serial.println(mainMenuPage);
+    // Serial.println(mainMenuPage);
 
     //draw ke atas key 2
     //draw ke bwawah key 8

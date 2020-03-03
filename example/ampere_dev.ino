@@ -1,8 +1,12 @@
-#include "EmonLib.h" // Include Emon Library
 #include <Keypad.h>
-#include <Wire.h> // Comes with Arduino IDE
-#include <LiquidCrystal_I2C.h>
-LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // Set the LCD I2C address
+#include <Wire.h>
+#include <Adafruit_ADS1015.h>
+#include <Arduino.h>
+#include <U8g2lib.h>
+
+#ifdef U8X8_HAVE_HW_SPI
+#include <SPI.h>
+#endif
 
 #define RELAY1 34
 #define RELAY2 32
@@ -24,26 +28,19 @@ byte rowPins[ROWS] = {8, 7, 6, 5}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {4, 3, 2};    //connect to the column pinouts of the keypad
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-int keypad_pin = A8;
-int keypad_value = 0;
-int keypad_value_old = 0;
+// EnergyMonitor emon1; // Create an instance
+// EnergyMonitor emon2; // Create an instance
+// EnergyMonitor emon3; // Create an instance
 
-EnergyMonitor emon1; // Create an instance
-EnergyMonitor emon2; // Create an instance
-EnergyMonitor emon3; // Create an instance
-
-char btn_push;
 byte mainMenuPage = 1;
 byte mainMenuPageOld = 1;
 byte mainMenuTotal = 7;
 
-int stat = 0;
 int sec = 1;
 unsigned long start;
 float c1 = 0, c2 = 0, c3 = 0;
 int RC1 = 15, RC2 = 35, RC3 = 80;
 float CTR = 170, CTS = 190, CTT = 150;
-String text;
 
 void setup()
 {
@@ -51,9 +48,9 @@ void setup()
     Serial.begin(9600);
     lcd.begin(20, 4);
 
-    emon1.current(pin_c1, CTR); // Current: input pin, calibration.
-    emon2.current(pin_c2, CTS); // Current: input pin, calibration.
-    emon3.current(pin_c3, CTT);
+    // emon1.current(pin_c1, CTR);
+    // emon2.current(pin_c2, CTS);
+    // emon3.current(pin_c3, CTT);
 
     Serial.print("CTR ");
     Serial.print(CTR);
@@ -86,9 +83,6 @@ void loop()
     char key;
     boolean stat = true;
 
-    emon1.current(pin_c1, CTR); // Current: input pin, calibration.
-    emon2.current(pin_c2, CTS); // Current: input pin, calibration.
-    emon3.current(pin_c3, CTT); // Current: input pin, calibration.
     //MainMenuDisplay();
     while (stat)
     {
@@ -96,7 +90,6 @@ void loop()
         if (key)
             stat = false;
     }
-    Serial.println(mainMenuPage);
 
     if (key == '2')
     {
@@ -118,7 +111,6 @@ void loop()
 
     if (key == '5') //enter selected menu
     {
-        //
         switch (mainMenuPage)
         {
         case 1:
@@ -144,8 +136,6 @@ void loop()
             break;
         }
     }
-
-    delay(500);
 }
 
 float femon1()
@@ -511,7 +501,7 @@ void MenuSetRC1()
         if (key == '8')
         {
             RC1 = RC1 - 1;
-            if (RC1 < 0)
+            if (RC 1 < 0)
             {
                 RC1 = 0;
             }
