@@ -59,34 +59,23 @@ CT4-CT6 (CS2):
 
 #if defined ESP8266
 const int CS_pin = 16;
-/*
-  D5/14 - CLK
-  D6/12 - MISO
-  D7/13 - MOSI
+/***
+ * D5/14 - CLK
+ * D6/12 - MISO
+ * D7/13 - MOSI
 */
 #elif defined ESP32
 const int CS_pin = 5;
 const int CS_pin_second = 4;
-/*
-  18 - CLK
-  19 - MISO
-  23 - MOSI
+/***
+ * 18 - CLK
+ * 19 - MISO
+ * 23 - MOSI
 */
-
-#else
-const int CS_pin = SS; // Use default SS pin for unknown Arduino
-const int CS_pin_second = 4;
 #endif
 
 ATM90E32 eic_first{};  //initialize the IC class
 ATM90E32 eic_second{}; //initialize the IC class
-
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-#ifdef U8X8_HAVE_HW_I2C
-#include <Wire.h>
-#endif
 
 #define RELAY1 2
 #define RELAY2 3
@@ -103,9 +92,10 @@ ATM90E32 eic_second{}; //initialize the IC class
 #define DOWN 11
 #define BACK 9
 
-// U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, /* clock=*/13, /* data=*/11, /* CS=*/10, /* reset=*/8);
 
+// U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, /* clock=*/13, /* data=*/11, /* CS=*/10, /* reset=*/8);
 /***
+ * LCD Library
  * Robotdyn Arduino Mega mini
  * SCK,MOSI,SS/CS
  * 10 -> 53
@@ -165,24 +155,25 @@ void setup()
 {
     Serial.begin(9600);
 
+    //LCD Init
     u8g2.begin();
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_ncenB08_tr);
     u8g2.drawStr(0, 10, "Setup");
-    u8g2.drawFrame(0, 0, 128, 64);
     u8g2.sendBuffer();
 
     ADC_1.setGain(GAIN_TWO);
     ADC_1.begin();
 
     pinMode(13, OUTPUT);
+
+    //Custom Keypad Init
     pinMode(UP, INPUT_PULLUP);
     pinMode(DOWN, INPUT_PULLUP);
     pinMode(OK, INPUT_PULLUP);
     pinMode(BACK, INPUT_PULLUP);
 
-    //RILEY
-
+    //RELAY INIT
     pinMode(RELAY1, OUTPUT);
     pinMode(RELAY2, OUTPUT);
     pinMode(RELAY3, OUTPUT);
@@ -199,7 +190,6 @@ void loop()
 {
     char key;
     boolean stat = true;
-
     key = getPressedKey();
 
     delay(100);
