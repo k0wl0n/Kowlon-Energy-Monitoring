@@ -92,7 +92,6 @@ ATM90E32 eic_second{}; //initialize the IC class
 #define DOWN 11
 #define BACK 9
 
-
 // U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, /* clock=*/13, /* data=*/11, /* CS=*/10, /* reset=*/8);
 /***
  * LCD Library
@@ -411,8 +410,11 @@ float MenuSet(float value, String name)
         key = getPressedKey();
         Serial.println(name);
         Serial.println(value);
-        // lcd.setCursor(0, 1);
-        // lcd.print(name);
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
+        u8g2.setCursor(0, 0);
+        u8g2.print(value);
+
         if (key == 'D')
         {
             value = value - 0.5;
@@ -420,85 +422,105 @@ float MenuSet(float value, String name)
             {
                 value = 0;
             }
-            // lcd.setCursor(0, 1);
-            // lcd.print("                ");
-            // lcd.setCursor(0, 1);
+            u8g2.setCursor(0, 1);
+            u8g2.print("                ");
+            u8g2.setCursor(0, 1);
+            u8g2.print(value);
             Serial.println(name);
             Serial.println(value);
         }
         else if (key == 'U')
         {
             value = value + 0.5;
+            u8g2.setCursor(0, 1);
+            u8g2.print("                ");
+            u8g2.setCursor(0, 1);
+            u8g2.print(value);
             Serial.println(name);
             Serial.println(value);
-            // lcd.setCursor(0, 1);
-            // lcd.print("                ");
-            // lcd.setCursor(0, 1);
-            // Serial.println(name);
-            // lcd.print(name);
         }
+        u8g2.sendBuffer();
     }
     return value;
 }
 
 void MainMenuDisplay()
 {
-    //lcd.clear();
-    //lcd.setCursor(0, 0);
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_ncenB08_tr);
+    u8g2.setCursor(0, 0);
     switch (mainMenuPage)
     {
     case 1:
+        u8g2.print("1.Monitor Arus");
         Serial.println("1.Monitor Arus");
         break;
     case 2:
+        u8g2.print("2.Kalibrasi CT R");
         Serial.println("2.Kalibrasi CT R");
         break;
     case 3:
+        u8g2.print("3.Kalibrasi CT S");
         Serial.println("3.Kalibrasi CT S");
         break;
     case 4:
+        u8g2.print("4.Kalibrasi CT T");
         Serial.println("4.Kalibrasi CT T");
         break;
     case 5:
+        u8g2.print("5.Kalibrasi CT P");
         Serial.println("5.Kalibrasi CT P");
         break;
     case 6:
+        u8g2.print("6.Set Relay C1");
         Serial.println("6.Set Relay C1");
         break;
     case 7:
+        u8g2.print("7.Set Relay C2");
         Serial.println("7.Set Relay C2");
         break;
     case 8:
+        u8g2.print("8.Set Relay C3");
         Serial.println("8.Set Relay C3");
         break;
     case 9:
+        u8g2.print("9.Set Relay C4");
         Serial.println("9.Set Relay C4");
         break;
     case 10:
+        u8g2.print("10.SECOND Kalibrasi CT R");
         Serial.println("10.SECOND Kalibrasi CT R");
         break;
     case 11:
+        u8g2.print("11.SECOND Kalibrasi CT S");
         Serial.println("11.SECOND Kalibrasi CT S");
         break;
     case 12:
+        u8g2.print("12.SECOND Kalibrasi CT T");
         Serial.println("12.SECOND Kalibrasi CT T");
         break;
     case 13:
+        u8g2.print("13.SECOND Kalibrasi CT P");
         Serial.println("13.SECOND Kalibrasi CT P");
         break;
     case 14:
+        u8g2.print("14.SECOND Set Relay C1");
         Serial.println("14.SECOND Set Relay C1");
         break;
     case 15:
+        u8g2.print("15.SECOND Set Relay C2");
         Serial.println("15.SECOND Set Relay C2");
         break;
     case 16:
+        u8g2.print("16.SECOND Set Relay C3");
         Serial.println("16.SECOND Set Relay C3");
         break;
     case 17:
+        u8g2.print("17.SECOND Set Relay C4");
         Serial.println("17.SECOND Set Relay C4");
         break;
     }
+    u8g2.sendBuffer();
 }
 
 char getPressedKey()
