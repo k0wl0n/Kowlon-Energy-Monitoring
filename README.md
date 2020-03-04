@@ -1,2 +1,1 @@
-# energy-monitor-ADS1115
-## energy-monitor-ADS1115
+## Energy Monitoring Using 8 Current Transformers
