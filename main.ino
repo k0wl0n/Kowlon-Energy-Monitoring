@@ -111,14 +111,6 @@ U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 18, 23, 27);
 
 Adafruit_ADS1115 ADC_1(0x48); //Create ADS1115 object
 
-// const float SCALEFACTOR = 0.125F; // This is the scale factor for the default +/- 4.096V Range we will use - see ADS1X15 Library
-// const float BURDEN_RESISTOR = 45;   // Burden resistor where measurement voltage gets measured.
-// const float VOLTAGE_MAINS = 220.00; // line voltage
-// const float COIL_WINDING = 2000;    // ratio of sensor 100:0.05
-// float MAX_CURRENT_COIL = 0.0707; // Maximum current of sensor rated at  Rms 100 A
-// float MAX_VOLTAGE_ADC = 36.057;  // Maximum Voltage on burden resistor calculated by burden resistor * maxAmps (33 Ohm * 0.0707 A)
-// float MAX_VOLTAGE_ADC = 15.981; // Maximum Voltage on burden resistor calculated by burden resistor * maxAmps (33 Ohm * 0.0707 A)
-
 byte mainMenuPage = 1;
 byte mainMenuPageOld = 1;
 byte mainMenuTotal = 17;
@@ -136,8 +128,6 @@ float CurrentGainCT7 = 36;             //SCT-013-000 100A/50mA
 float CurrentGainCT8 = 36;             //SCT-013-000 100A/50mA
 float multiplier = 0.0625F;
 
-//reff SCT-019-000 200/30mA 9172
-
 // board integrated ATM90E32 CircuitSetup
 // CT1   CT2  CT3  CT4  CT5  CT6
 // 1R    2S   3T   4P   5R   6S
@@ -150,7 +140,6 @@ float multiplier = 0.0625F;
 //Riley Setup
 int RC1 = 15, RC2 = 35, RC3 = 80, RC4 = 80;
 int RC1_SECOND = 15, RC2_SECOND = 35, RC3_SECOND = 80, RC4_SECOND = 80;
-
 
 void setup()
 {
@@ -295,15 +284,8 @@ void MenuAmpere()
     float totalVoltage;
     float currentCT1, currentCT2, currentCT3;
     float currentCT4, currentCT5, currentCT6;
+    float currentCT7, currentCT8;
     float totalCurrent, realPower, powerFactor, temp, freq, totalWatts;
-
-    float voltage_adc_1 = 0.0;
-    float voltage_adc_2 = 0.0;
-    float ampere_adc_1 = 0.0;
-    float ampere_adc_2 = 0.0;
-    float power_1 = 0.0;
-    float power_2 = 0.0;
-    float power_total = 0.0;
 
     char key;
     while (key != 'B')
@@ -311,7 +293,7 @@ void MenuAmpere()
         key = getPressedKey();
         unsigned short sys0 = eic_first.GetSysStatus0();  //EMMState0
         unsigned short sys1 = eic_second.GetSysStatus0(); //EMMState0
-        
+
         //if true the MCU is not getting data from the energy meter
         if (sys0 == 65535 || sys0 == 0)
             Serial.println("Error: Not receiving data from energy meter 1 - check your connections");
@@ -343,43 +325,21 @@ void MenuAmpere()
         currentCT6 = eic_second.GetLineCurrentC();
         totalCurrent = currentCT4 + currentCT5 + currentCT6 + totalCurrent;
 
+        //get current from ADS1115
+        currentCT7 = getIRMS(CurrentGainCT7, 1);
+        currentCT8 = getIRMS(CurrentGainCT8, 2);
+
         Serial.println("Voltage 1: " + String(voltageA_first) + "V");
         Serial.println("Voltage 2: " + String(voltageA_second) + "V");
+
         Serial.println("Current 1: " + String(currentCT1) + "A");
         Serial.println("Current 2: " + String(currentCT2) + "A");
         Serial.println("Current 3: " + String(currentCT3) + "A");
         Serial.println("Current 4: " + String(currentCT4) + "A");
         Serial.println("Current 5: " + String(currentCT5) + "A");
         Serial.println("Current 6: " + String(currentCT6) + "A");
-
-        Serial.println("Real Power 1: " + String(voltageA_first) + "V");
-        realPower = eic_first.GetTotalActivePower();
-        powerFactor = eic_first.GetTotalPowerFactor();
-
-        Serial.println("Active Power: " + String(realPower) + "W");
-        Serial.println("Power Factor: " + String(powerFactor));
-
-        //Get From Ampere ADS1115
-        // ampere_adc_1 = calcVrms(100, 1);
-        // ampere_adc_2 = calcVrms(100, 2);
-        // voltage_adc_1 = ampere_adc_1 / 100.0;
-        // voltage_adc_2 = ampere_adc_2 / 100.0;
-        // power_1 = calcPower(voltage_adc_1, CurrentGainCT7);
-        // power_2 = calcPower(voltage_adc_2, CurrentGainCT8);
-        // power_total = power_1 + power_2;
-
-        // Serial.println("Ampere: " + String(ampere_adc_1) + "A");
-        // Serial.println("Voltage: " + String(voltage_adc_1) + "A");
-        // Serial.println("power: " + String(power_1) + "A");
-
-        // Serial.println("Ampere 2: " + String(ampere_adc_2) + "A");
-        // Serial.println("Voltage 2: " + String(voltage_adc_2) + "A");
-        // Serial.println("power 2: " + String(power_2) + "A");
-        // Serial.println("CurrentGainCT7: " + String(CurrentGainCT7) + "A");
-        // Serial.println("CurrentGainCT8: " + String(CurrentGainCT8) + "A");
-
-        Serial.println("getIRMS1: " + String(getIRMS(CurrentGainCT7, 1)) + "A");
-        Serial.println("getIRMS2: " + String(getIRMS(CurrentGainCT8, 2)) + "A");
+        Serial.println("Current 7: " + String(currentCT7) + "A");
+        Serial.println("Current 8: " + String(currentCT8) + "A");
         Serial.println();
         Serial.println();
     }
@@ -420,46 +380,6 @@ float getIRMS(float factor, unsigned int phase)
     }
     corriente = sqrt(sum / counter);
     return corriente;
-}
-
-double calcVrms(unsigned int Samples, unsigned int phase)
-{
-    float voltage_rms;
-    float squared_voltage;
-    float sample_voltage_sum;
-    float sample_voltage;
-
-    for (unsigned int n = 0; n < Samples; n++)
-    {
-        switch (phase)
-        {
-        case 1:
-        {
-            sample_voltage = ADC_1.readADC_Differential_0_1();
-            break;
-        }
-        case 2:
-        {
-            sample_voltage = ADC_1.readADC_Differential_2_3();
-            break;
-        }
-        default:
-            break;
-        }
-        squared_voltage = sample_voltage * sample_voltage;
-        sample_voltage_sum += squared_voltage;
-    }
-
-    voltage_rms = (sqrt(sample_voltage_sum / Samples) * SCALEFACTOR) * sqrt(2);
-    sample_voltage_sum = 0;
-    return voltage_rms;
-}
-
-double calcPower(float voltage, int calibration)
-{
-    double power;
-    power = voltage / calibration * COIL_WINDING * VOLTAGE_MAINS;
-    return power;
 }
 
 float MenuSet(float value, String name, int status)
