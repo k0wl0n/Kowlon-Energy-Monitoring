@@ -119,10 +119,10 @@ void loop()
     u8g2.setCursor(3, 19);
     u8g2.print("C2 :");
     u8g2.print(ampere_adc_2);
-    u8g2.setCursor(3, 37);
+    u8g2.setCursor(3, 28);
     u8g2.print("C3 :");
     u8g2.print(ampere_adc_3);
-    u8g2.setCursor(3, 28);
+    u8g2.setCursor(3, 37);
     u8g2.print("C4 :");
     u8g2.print(ampere_adc_4);
     u8g2.setFont(u8g2_font_profont22_tf);

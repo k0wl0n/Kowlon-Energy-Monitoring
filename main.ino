@@ -4,29 +4,22 @@
 #include <U8g2lib.h>
 #include <SPI.h>
 #include <ATM90E32.h>
+#include <PCF8574.h>
+// #include <FS.h>          // this needs to be first, or it all crashes and burns...
+// #include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson
+// #include <SPIFFS.h>
+
+// Set i2c address
+PCF8574 expander_1(0x20);
+PCF8574 expander_2(0x24);
 
 /***** Another SS PINS ****
  * SPI	MOSI	MISO	CLK	CS
  * VSPI	GPIO 23	GPIO 19	GPIO 18	GPIO 5
  * HSPI	GPIO 13	GPIO 12	GPIO 14	GPIO 15
+ * For SS PIN
+ * 0 27 35 13 14 15 16 17 21 22 25 26
 */
-/* For SS PIN
-0
-27
-35
-13
-14
-15
-
-CT4-CT6 (CS2):
-16
-17
-21
-22
-25
-26
-*/
-
 /***** CALIBRATION SETTINGS *****/
 /* 
  * 4485 for 60 Hz (North America)
@@ -77,15 +70,15 @@ const int CS_pin_second = 4;
 ATM90E32 eic_first{};  //initialize the IC class
 ATM90E32 eic_second{}; //initialize the IC class
 
-#define RELAY1 2
-#define RELAY2 3
-#define RELAY3 4
-#define RELAY4 5
+// #define RELAY1 33
+// #define RELAY2 32
+// #define RELAY3 35
+// #define RELAY4 34
 
-#define RELAY1_SECOND 2
-#define RELAY2_SECOND 3
-#define RELAY3_SECOND 4
-#define RELAY4_SECOND 5
+// #define RELAY1_SECOND 2
+// #define RELAY2_SECOND 3
+// #define RELAY3_SECOND 4
+// #define RELAY4_SECOND 5
 
 #define UP 18
 #define OK 19
@@ -107,13 +100,13 @@ ATM90E32 eic_second{}; //initialize the IC class
  * 27 - SS
 */
 
-U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 18, 23, 27);
+U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 14, 13, 27);
 
 Adafruit_ADS1115 ADC_1(0x48); //Create ADS1115 object
 
 byte mainMenuPage = 1;
 byte mainMenuPageOld = 1;
-byte mainMenuTotal = 17;
+byte mainMenuTotal = 13;
 
 unsigned short LineFreq = 389;
 unsigned short PGAGain = 42;
@@ -138,8 +131,8 @@ float multiplier = 0.0625F;
 // 100A  100A
 
 //Riley Setup
-int RC1 = 15, RC2 = 35, RC3 = 80, RC4 = 80;
-int RC1_SECOND = 15, RC2_SECOND = 35, RC3_SECOND = 80, RC4_SECOND = 80;
+unsigned int RC1 = 5, RC2 = 30, RC3 = 45, RC4 = 70;
+unsigned int RC1_SECOND = 15, RC2_SECOND = 35, RC3_SECOND = 80, RC4_SECOND = 80;
 
 void setup()
 {
@@ -148,14 +141,14 @@ void setup()
     //LCD Init
     u8g2.begin();
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_ncenB08_tr);
+    u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
     u8g2.drawStr(0, 10, "Setup");
     u8g2.sendBuffer();
 
     ADC_1.setGain(GAIN_TWO);
     ADC_1.begin();
 
-    pinMode(13, OUTPUT);
+    // pinMode(13, OUTPUT);
 
     //Custom Keypad Init
     pinMode(UP, INPUT_PULLUP);
@@ -163,17 +156,42 @@ void setup()
     pinMode(OK, INPUT_PULLUP);
     pinMode(BACK, INPUT_PULLUP);
 
-    //RELAY INIT
-    pinMode(RELAY1, OUTPUT);
-    pinMode(RELAY2, OUTPUT);
-    pinMode(RELAY3, OUTPUT);
-    pinMode(RELAY4, OUTPUT);
-    pinMode(RELAY1_SECOND, OUTPUT);
-    pinMode(RELAY2_SECOND, OUTPUT);
-    pinMode(RELAY3_SECOND, OUTPUT);
-    pinMode(RELAY4_SECOND, OUTPUT);
+    // expander_2.pinMode(P0, INPUT_PULLUP);
+    // expander_2.pinMode(P1, INPUT_PULLUP);
+    // expander_2.pinMode(P2, INPUT_PULLUP);
+    // expander_2.pinMode(P3, INPUT_PULLUP);
 
-    delay(500);
+    //RELAY INIT
+    expander_1.pinMode(P0, OUTPUT);
+    expander_1.pinMode(P1, OUTPUT);
+    expander_1.pinMode(P2, OUTPUT);
+    expander_1.pinMode(P3, OUTPUT);
+
+    expander_1.pinMode(P4, OUTPUT);
+    expander_1.pinMode(P5, OUTPUT);
+    expander_1.pinMode(P6, OUTPUT);
+    expander_1.pinMode(P7, OUTPUT);
+
+    expander_1.digitalWrite(P0, LOW);
+    expander_1.digitalWrite(P1, LOW);
+    expander_1.digitalWrite(P2, LOW);
+    // expander_1.digitalWrite(P3, LOW);
+    // expander_1.digitalWrite(P4, LOW);
+    // expander_1.digitalWrite(P5, LOW);
+    // expander_1.digitalWrite(P6, LOW);
+    // expander_1.digitalWrite(P7, LOW);
+
+    // Relay Test
+    // delay(1000);
+    // expander_1.digitalWrite(P0, HIGH);
+    // expander_1.digitalWrite(P1, HIGH);
+    // expander_1.digitalWrite(P2, HIGH);
+    expander_1.digitalWrite(P3, HIGH);
+    expander_1.digitalWrite(P4, HIGH);
+    expander_1.digitalWrite(P5, HIGH);
+    expander_1.digitalWrite(P6, HIGH);
+    expander_1.digitalWrite(P7, HIGH);
+    delay(1000);
 }
 
 void loop()
@@ -211,54 +229,53 @@ void loop()
             MenuAmpere();
             break;
         case 2:
-            CurrentGainCT1 = MenuSet(CurrentGainCT1, "CTR", 1);
+            CurrentGainCT1 = MenuSet(CurrentGainCT1, "OUT CTR", 1);
             break;
         case 3:
-            CurrentGainCT2 = MenuSet(CurrentGainCT2, "CTS", 1);
+            CurrentGainCT2 = MenuSet(CurrentGainCT2, "OUT CTS", 1);
             break;
         case 4:
-            CurrentGainCT3 = MenuSet(CurrentGainCT3, "CTT", 1);
+            CurrentGainCT3 = MenuSet(CurrentGainCT3, "OUT CTT", 1);
             break;
         case 5:
-            CurrentGainCT4 = MenuSet(CurrentGainCT4, "CTP", 1);
+            CurrentGainCT4 = MenuSet(CurrentGainCT4, "IN CTR", 1);
             break;
         case 6:
-            RC1 = MenuSet(RC1, "Relay 1", 0);
+            CurrentGainCT5 = MenuSet(CurrentGainCT5, "IN CTS", 1);
             break;
         case 7:
-            RC2 = MenuSet(RC2, "Relay 2", 0);
+            CurrentGainCT6 = MenuSet(CurrentGainCT6, "IN CTT", 1);
             break;
         case 8:
-            RC3 = MenuSet(RC3, "Relay 3", 0);
+            CurrentGainCT7 = MenuSet(CurrentGainCT7, "A CT", 0);
             break;
         case 9:
-            RC4 = MenuSet(RC4, "Relay 4", 0);
+            CurrentGainCT8 = MenuSet(CurrentGainCT8, "B CT", 0);
             break;
         case 10:
-            CurrentGainCT5 = MenuSet(CurrentGainCT5, "SECOND CTR", 1);
+            RC1 = MenuSet(RC1, "Relay 1", 0);
             break;
         case 11:
-            CurrentGainCT6 = MenuSet(CurrentGainCT6, "SECOND CTS", 1);
+            RC2 = MenuSet(RC2, "Relay 2", 0);
             break;
         case 12:
-            Serial.println("masuk 12");
-            CurrentGainCT7 = MenuSet(CurrentGainCT7, "SECOND CTT", 0);
+            RC3 = MenuSet(RC3, "Relay 3", 0);
             break;
         case 13:
-            CurrentGainCT8 = MenuSet(CurrentGainCT8, "SECOND CTP", 0);
+            RC4 = MenuSet(RC4, "Relay 4", 0);
             break;
-        case 14:
-            RC1_SECOND = MenuSet(RC1_SECOND, "SECOND Relay 1", 0);
-            break;
-        case 15:
-            RC2_SECOND = MenuSet(RC2_SECOND, "SECOND Relay 2", 0);
-            break;
-        case 16:
-            RC3_SECOND = MenuSet(RC3_SECOND, "SECOND Relay 3", 0);
-            break;
-        case 17:
-            RC4_SECOND = MenuSet(RC4_SECOND, "SECOND Relay 4 ", 0);
-            break;
+            // case 14:
+            //     RC1_SECOND = MenuSet(RC1_SECOND, "SECOND Relay 1", 0);
+            //     break;
+            // case 15:
+            //     RC2_SECOND = MenuSet(RC2_SECOND, "SECOND Relay 2", 0);
+            //     break;
+            // case 16:
+            //     RC3_SECOND = MenuSet(RC3_SECOND, "SECOND Relay 3", 0);
+            //     break;
+            // case 17:
+            //     RC4_SECOND = MenuSet(RC4_SECOND, "SECOND Relay 4 ", 0);
+            //     break;
         }
     }
 
@@ -271,11 +288,18 @@ void loop()
 
 void MenuAmpere()
 {
+    u8g2.begin();
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
+    u8g2.drawStr(0, 10, "Initializing");
+    u8g2.sendBuffer();
     /*Initialise the ATM90E32 & Pass CS pin and calibrations to its library
     the 2nd (B) current channel is not used with the split phase meter */
-    // Serial.println("Start ATM90E32");
+    Serial.println("Start ATM90E32");
     eic_first.begin(CS_pin, LineFreq, PGAGain, VoltageGain, CurrentGainCT1, CurrentGainCT2, CurrentGainCT3);
     eic_second.begin(CS_pin_second, LineFreq, PGAGain, VoltageGain, CurrentGainCT4, CurrentGainCT5, CurrentGainCT6);
+
+    delay(500);
 
     //Get From ATM90E32
     /*Repeatedly fetch some values from the ATM90E32 */
@@ -286,7 +310,9 @@ void MenuAmpere()
     float currentCT4, currentCT5, currentCT6;
     float currentCT7, currentCT8;
     float totalCurrent, realPower, powerFactor, temp, freq, totalWatts;
-
+    float tCurrentA, tCurrentB, tCurrentC;
+    float testCurrent, testTotal;
+    long lastMillis = millis();
     char key;
     while (key != 'B')
     {
@@ -317,17 +343,20 @@ void MenuAmpere()
         currentCT1 = eic_first.GetLineCurrentA();
         currentCT2 = eic_first.GetLineCurrentB();
         currentCT3 = eic_first.GetLineCurrentC();
-        totalCurrent = currentCT1 + currentCT2 + currentCT3;
+        tCurrentA = currentCT1 + currentCT2 + currentCT3;
 
         //get current second
         currentCT4 = eic_second.GetLineCurrentA();
         currentCT5 = eic_second.GetLineCurrentB();
         currentCT6 = eic_second.GetLineCurrentC();
-        totalCurrent = currentCT4 + currentCT5 + currentCT6 + totalCurrent;
+        tCurrentB = currentCT4 + currentCT5 + currentCT6;
 
         //get current from ADS1115
         currentCT7 = getIRMS(CurrentGainCT7, 1);
         currentCT8 = getIRMS(CurrentGainCT8, 2);
+        tCurrentC = currentCT7 + currentCT8;
+
+        totalCurrent = tCurrentA + tCurrentB + tCurrentC;
 
         Serial.println("Voltage 1: " + String(voltageA_first) + "V");
         Serial.println("Voltage 2: " + String(voltageA_second) + "V");
@@ -341,7 +370,48 @@ void MenuAmpere()
         Serial.println("Current 7: " + String(currentCT7) + "A");
         Serial.println("Current 8: " + String(currentCT8) + "A");
         Serial.println();
+        Serial.println("Total Current: " + String(totalCurrent) + "A");
         Serial.println();
+        Serial.println();
+
+        // //for testing relay
+        // if (millis() - lastMillis >= 2000)
+        // {
+        //     lastMillis = millis(); //get ready for the next iteration
+        //     testCurrent += 5;
+        //     testTotal += 5;
+        // }
+
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
+        u8g2.setCursor(3, 10);
+        u8g2.print("O1:");
+        u8g2.print(testCurrent);
+        u8g2.setCursor(3, 19);
+        u8g2.print("O2:");
+        u8g2.print(currentCT2);
+        u8g2.setCursor(3, 28);
+        u8g2.print("O3:");
+        u8g2.print(currentCT3);
+        u8g2.setCursor(72, 10);
+        u8g2.print("I4:");
+        u8g2.print(currentCT4);
+        u8g2.setCursor(72, 19);
+        u8g2.print("I5:");
+        u8g2.print(currentCT5);
+        u8g2.setCursor(72, 28);
+        u8g2.print("I6:");
+        u8g2.print(currentCT6);
+        u8g2.setCursor(3, 37);
+        u8g2.print("C7:");
+        u8g2.print(currentCT7);
+        u8g2.setCursor(72, 37);
+        u8g2.print("C8:");
+        u8g2.print(currentCT8);
+        u8g2.drawFrame(0, 0, 128, 64);
+        u8g2.sendBuffer();
+
+        relaySwitch(tCurrentA, tCurrentB, tCurrentC, testTotal);
     }
 }
 
@@ -382,6 +452,71 @@ float getIRMS(float factor, unsigned int phase)
     return corriente;
 }
 
+void relaySwitch(float CurrentInput, float tCurrentB, float tCurrentC, float totalCurrent)
+{
+    //OUTPUT Relay -  1 2 3 BYPASS
+    if (CurrentInput >= 0 && CurrentInput <= 65)
+    {
+        expander_1.digitalWrite(P0, LOW);
+        expander_1.digitalWrite(P1, LOW);
+        expander_1.digitalWrite(P2, LOW);
+    }
+    else if (CurrentInput > 65)
+    {
+        expander_1.digitalWrite(P0, HIGH);
+        expander_1.digitalWrite(P1, HIGH);
+        expander_1.digitalWrite(P2, HIGH);
+    }
+
+    //OUTPUT Relay -  5 6 7 8 GEL
+    if (CurrentInput >= 0 && CurrentInput < RC1) //R1
+    {
+        //all OFF
+        expander_1.digitalWrite(P4, HIGH);
+        expander_1.digitalWrite(P5, HIGH);
+        expander_1.digitalWrite(P6, HIGH);
+        expander_1.digitalWrite(P7, HIGH);
+    }
+    else if (CurrentInput >= RC1 && CurrentInput < RC2) //R1 - R2
+    {
+        //5 ON
+        // else OFF
+        expander_1.digitalWrite(P4, LOW);
+        expander_1.digitalWrite(P5, HIGH);
+        expander_1.digitalWrite(P6, HIGH);
+        expander_1.digitalWrite(P7, HIGH);
+    }
+    else if (CurrentInput >= RC2 && CurrentInput < RC3) //R2 - R3
+    {
+        //5 ON
+        //6 ON
+        // else OFF
+        expander_1.digitalWrite(P4, LOW);
+        expander_1.digitalWrite(P5, LOW);
+        expander_1.digitalWrite(P6, HIGH);
+        expander_1.digitalWrite(P7, HIGH);
+    }
+    else if (CurrentInput >= RC3 && CurrentInput < RC4) //R3 - R4
+    {
+        //5 ON
+        //6 ON
+        //7 ON
+        // else OFF
+        expander_1.digitalWrite(P4, LOW);
+        expander_1.digitalWrite(P5, LOW);
+        expander_1.digitalWrite(P6, LOW);
+        expander_1.digitalWrite(P7, HIGH);
+    }
+    else if (CurrentInput > RC4) //R4
+    {
+        //All On
+        expander_1.digitalWrite(P4, LOW);
+        expander_1.digitalWrite(P5, LOW);
+        expander_1.digitalWrite(P6, LOW);
+        expander_1.digitalWrite(P7, LOW);
+    }
+}
+
 float MenuSet(float value, String name, int status)
 {
     char key = 'X';
@@ -392,7 +527,7 @@ float MenuSet(float value, String name, int status)
         Serial.println(value);
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
-        u8g2.setCursor(0, 0);
+        u8g2.setCursor(0, 10);
         u8g2.print(value);
 
         if (key == 'D')
@@ -410,9 +545,9 @@ float MenuSet(float value, String name, int status)
             {
                 value = 0;
             }
-            u8g2.setCursor(0, 1);
+            u8g2.setCursor(0, 10);
             u8g2.print("                ");
-            u8g2.setCursor(0, 1);
+            u8g2.setCursor(0, 10);
             u8g2.print(value);
             Serial.println(name);
             Serial.println(value);
@@ -428,9 +563,9 @@ float MenuSet(float value, String name, int status)
                 value = value + 1;
             }
 
-            u8g2.setCursor(0, 1);
+            u8g2.setCursor(0, 10);
             u8g2.print("                ");
-            u8g2.setCursor(0, 1);
+            u8g2.setCursor(0, 10);
             u8g2.print(value);
             Serial.println(name);
             Serial.println(value);
@@ -443,8 +578,8 @@ float MenuSet(float value, String name, int status)
 void MainMenuDisplay()
 {
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_ncenB08_tr);
-    u8g2.setCursor(0, 0);
+    u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
+    u8g2.setCursor(0, 10);
     switch (mainMenuPage)
     {
     case 1:
@@ -452,69 +587,69 @@ void MainMenuDisplay()
         Serial.println("1.Monitor Arus");
         break;
     case 2:
-        u8g2.print("2.Kalibrasi CT R");
-        Serial.println("2.Kalibrasi CT R");
+        u8g2.print("2.Cal OUT CTR");
+        Serial.println("2.Cal OUT CTR");
         break;
     case 3:
-        u8g2.print("3.Kalibrasi CT S");
-        Serial.println("3.Kalibrasi CT S");
+        u8g2.print("3.Cal OUT CTS");
+        Serial.println("3.Cal OUT CTS");
         break;
     case 4:
-        u8g2.print("4.Kalibrasi CT T");
-        Serial.println("4.Kalibrasi CT T");
+        u8g2.print("4.Cal OUT CTT");
+        Serial.println("4.Cal OUT CTT");
         break;
     case 5:
-        u8g2.print("5.Kalibrasi CT P");
-        Serial.println("5.Kalibrasi CT P");
+        u8g2.print("5.Cal IN CTR");
+        Serial.println("5.Cal IN CTR");
         break;
     case 6:
-        u8g2.print("6.Set Relay C1");
-        Serial.println("6.Set Relay C1");
+        u8g2.print("6.Cal IN CTS");
+        Serial.println("6.Cal IN CTS");
         break;
     case 7:
-        u8g2.print("7.Set Relay C2");
-        Serial.println("7.Set Relay C2");
+        u8g2.print("7.Cal IN CTT");
+        Serial.println("7.Cal IN CTT");
         break;
     case 8:
-        u8g2.print("8.Set Relay C3");
-        Serial.println("8.Set Relay C3");
+        u8g2.print("8.Cal A CT");
+        Serial.println("8.Cal A CT");
         break;
     case 9:
-        u8g2.print("9.Set Relay C4");
-        Serial.println("9.Set Relay C4");
+        u8g2.print("9.Cal B CT");
+        Serial.println("9.Cal B CT");
         break;
     case 10:
-        u8g2.print("10.SECOND Kalibrasi CT R");
-        Serial.println("10.SECOND Kalibrasi CT R");
+        u8g2.print("10.Set RL C1");
+        Serial.println("10.Set RL C1");
         break;
     case 11:
-        u8g2.print("11.SECOND Kalibrasi CT S");
-        Serial.println("11.SECOND Kalibrasi CT S");
+        u8g2.print("11.Set RL C2");
+        Serial.println("11.Set RL C2");
         break;
     case 12:
-        u8g2.print("12.SECOND Kalibrasi CT T");
-        Serial.println("12.SECOND Kalibrasi CT T");
+        u8g2.print("12.Set RL C3");
+        Serial.println("12.Set RL C3");
         break;
     case 13:
-        u8g2.print("13.SECOND Kalibrasi CT P");
-        Serial.println("13.SECOND Kalibrasi CT P");
+        u8g2.print("13.Set RL C4");
+        Serial.println("13.Set RL C4");
         break;
-    case 14:
-        u8g2.print("14.SECOND Set Relay C1");
-        Serial.println("14.SECOND Set Relay C1");
-        break;
-    case 15:
-        u8g2.print("15.SECOND Set Relay C2");
-        Serial.println("15.SECOND Set Relay C2");
-        break;
-    case 16:
-        u8g2.print("16.SECOND Set Relay C3");
-        Serial.println("16.SECOND Set Relay C3");
-        break;
-    case 17:
-        u8g2.print("17.SECOND Set Relay C4");
-        Serial.println("17.SECOND Set Relay C4");
-        break;
+        // case 14:
+        //     u8g2.print("14.Set Relay_2 C1");
+        //     Serial.println("14.Set Relay_2 C1");
+        //     break;
+        // case 15:
+        //     u8g2.print("15.Set Relay_2 C2");
+        //     Serial.println("15.Set Relay_2 C2");
+        //     break;
+        // case 16:
+        //     u8g2.print("16.Set Relay_2 C3");
+        //     Serial.println("16.Set Relay_2 C3");
+        //     break;
+        // case 17:
+        //     u8g2.print("17.Set Relay_2 C4");
+        //     Serial.println("17.Set Relay_2 C4");
+        //     break;
     }
     u8g2.sendBuffer();
 }
@@ -541,3 +676,65 @@ char getPressedKey()
     }
     return key;
 }
+
+// void setupSpiffs()
+// {
+//     //clean FS, for testing
+//     //SPIFFS.format();
+
+//     //read configuration from FS json
+//     Serial.println("mounting FS...");
+
+//     if (SPIFFS.begin())
+//     {
+//         Serial.println("mounted file system");
+//         if (SPIFFS.exists("/config.json"))
+//         {
+//             //file exists, reading and loading
+//             Serial.println("reading config file");
+//             File configFile = SPIFFS.open("/config.json");
+//             if (configFile)
+//             {
+//                 Serial.println("opened config file");
+//                 size_t size = configFile.size();
+//                 // Allocate a buffer to store contents of the file.
+//                 std::unique_ptr<char[]> buf(new char[size]);
+
+//                 configFile.readBytes(buf.get(), size);
+//                 DynamicJsonBuffer jsonBuffer;
+//                 JsonObject &json = jsonBuffer.parseObject(buf.get());
+//                 json.printTo(Serial);
+//                 if (json.success())
+//                 {
+//                     Serial.println("\nparsed json");
+
+//                     CurrentGainCT1 = json["CurrentGainCT1"];
+//                     CurrentGainCT2 = json["CurrentGainCT2"];
+//                     CurrentGainCT3 = json["CurrentGainCT3"];
+//                     CurrentGainCT4 = json["CurrentGainCT4"];
+//                     CurrentGainCT5 = json["CurrentGainCT5"];
+//                     CurrentGainCT6 = json["CurrentGainCT6"];
+//                     CurrentGainCT7 = json["CurrentGainCT7"];
+//                     CurrentGainCT8 = json["CurrentGainCT8"];
+//                     RC1 = json["RC1"];
+//                     RC2 = json["RC2"];
+//                     RC3 = json["RC3"];
+//                     RC4 = json["RC4"];
+
+//                     // strcpy(mqtt_server, json["mqtt_server"]);
+//                     // strcpy(mqtt_port, json["mqtt_port"]);
+//                     // strcpy(api_token, json["api_token"]);
+//                 }
+//                 else
+//                 {
+//                     Serial.println("failed to load json config");
+//                 }
+//             }
+//         }
+//     }
+//     else
+//     {
+//         Serial.println("failed to mount FS");
+//     }
+//     //end read
+// }

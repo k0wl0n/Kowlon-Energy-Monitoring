@@ -1,0 +1,18 @@
+{
+    "CurrentGainCT1": 39473,
+    "CurrentGainCT2": 39473,
+    "CurrentGainCT3": 39473,
+    "CurrentGainCT4": 5000,
+    "CurrentGainCT5": 25498,
+    "CurrentGainCT6": 25498,
+    "CurrentGainCT7": 36,
+    "CurrentGainCT8": 36,
+    "RC1_SECOND": 5,
+    "RC2_SECOND": 30,
+    "RC3_SECOND": 45,
+    "RC4_SECOND": 70,
+    "RC1": 5,
+    "RC2": 5,
+    "RC3": 5,
+    "RC4": 5
+}
