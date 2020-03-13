@@ -5,13 +5,13 @@
 #include <SPI.h>
 #include <ATM90E32.h>
 #include <PCF8574.h>
-// #include <FS.h>          // this needs to be first, or it all crashes and burns...
-// #include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson
-// #include <SPIFFS.h>
+#include <FS.h>          // this needs to be first, or it all crashes and burns...
+#include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson
+#include <SPIFFS.h>
 
 // Set i2c address
 PCF8574 expander_1(0x20);
-PCF8574 expander_2(0x24);
+// PCF8574 expander_2(0x24);
 
 /***** Another SS PINS ****
  * SPI	MOSI	MISO	CLK	CS
@@ -94,10 +94,9 @@ ATM90E32 eic_second{}; //initialize the IC class
  * 11 -> 51
  * 13 -> 52
  * ESP32
- * 18 - CLK
- * 19 - MISO
- * 23 - MOSI
- * 27 - SS
+ * 14 - CLK -> E
+ * 13 - MOSI -> R/W
+ * 27 - SS -> RS
 */
 
 U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 14, 13, 27);
@@ -106,19 +105,19 @@ Adafruit_ADS1115 ADC_1(0x48); //Create ADS1115 object
 
 byte mainMenuPage = 1;
 byte mainMenuPageOld = 1;
-byte mainMenuTotal = 13;
+byte mainMenuTotal = 11;
 
 unsigned short LineFreq = 389;
 unsigned short PGAGain = 42;
 unsigned short VoltageGain = 37106;
-unsigned short CurrentGainCT1 = 39473; //SCT-019-000 200/30mA
-unsigned short CurrentGainCT2 = 39473; //SCT-019-000 200/30mA
-unsigned short CurrentGainCT3 = 39473; //SCT-019-000 200/30mA
-unsigned short CurrentGainCT4 = 5000;  //SCT-019-000 200/30mA
-unsigned short CurrentGainCT5 = 25498; //SCT-013-000 100A/50mA
-unsigned short CurrentGainCT6 = 25498; //SCT-013-000 100A/50mA
-float CurrentGainCT7 = 36;             //SCT-013-000 100A/50mA
-float CurrentGainCT8 = 36;             //SCT-013-000 100A/50mA
+unsigned short CurrentGainCT1 = 40023; //SCT-019-000 200/30mA
+unsigned short CurrentGainCT2 = 40023; //SCT-019-000 200/30mA
+unsigned short CurrentGainCT3 = 40023; //SCT-019-000 200/30mA
+unsigned short CurrentGainCT4 = 12300; //SCT-019-000 200/30mA
+unsigned short CurrentGainCT5 = 4048;  //SCT-013-000 100A/50mA
+unsigned short CurrentGainCT6 = 4046;  //SCT-013-000 100A/50mA
+float CurrentGainCT7 = 33;             //SCT-013-000 100A/50mA
+float CurrentGainCT8 = 33;             //SCT-013-000 100A/50mA
 float multiplier = 0.0625F;
 
 // board integrated ATM90E32 CircuitSetup
@@ -229,39 +228,39 @@ void loop()
             MenuAmpere();
             break;
         case 2:
-            CurrentGainCT1 = MenuSet(CurrentGainCT1, "OUT CTR", 1);
+            CurrentGainCT1 = MenuSet(CurrentGainCT1, "OUT A", 1);
             break;
         case 3:
-            CurrentGainCT2 = MenuSet(CurrentGainCT2, "OUT CTS", 1);
+            CurrentGainCT2 = MenuSet(CurrentGainCT2, "OUT B", 1);
             break;
         case 4:
-            CurrentGainCT3 = MenuSet(CurrentGainCT3, "OUT CTT", 1);
+            CurrentGainCT3 = MenuSet(CurrentGainCT3, "OUT C", 1);
             break;
         case 5:
-            CurrentGainCT4 = MenuSet(CurrentGainCT4, "IN CTR", 1);
+            CurrentGainCT4 = MenuSet(CurrentGainCT4, "IN A", 1);
             break;
         case 6:
-            CurrentGainCT5 = MenuSet(CurrentGainCT5, "IN CTS", 1);
+            CurrentGainCT5 = MenuSet(CurrentGainCT5, "IN B", 1);
             break;
         case 7:
-            CurrentGainCT6 = MenuSet(CurrentGainCT6, "IN CTT", 1);
+            CurrentGainCT6 = MenuSet(CurrentGainCT6, "IN C", 1);
             break;
+        // case 8:
+        //     CurrentGainCT7 = MenuSet(CurrentGainCT7, "A CT", 0);
+        //     break;
+        // case 7:
+        //     CurrentGainCT8 = MenuSet(CurrentGainCT8, "B CT", 0);
+        //     break;
         case 8:
-            CurrentGainCT7 = MenuSet(CurrentGainCT7, "A CT", 0);
-            break;
-        case 9:
-            CurrentGainCT8 = MenuSet(CurrentGainCT8, "B CT", 0);
-            break;
-        case 10:
             RC1 = MenuSet(RC1, "Relay 1", 0);
             break;
-        case 11:
+        case 9:
             RC2 = MenuSet(RC2, "Relay 2", 0);
             break;
-        case 12:
+        case 10:
             RC3 = MenuSet(RC3, "Relay 3", 0);
             break;
-        case 13:
+        case 11:
             RC4 = MenuSet(RC4, "Relay 4", 0);
             break;
             // case 14:
@@ -310,7 +309,9 @@ void MenuAmpere()
     float currentCT4, currentCT5, currentCT6;
     float currentCT7, currentCT8;
     float totalCurrent, realPower, powerFactor, temp, freq, totalWatts;
-    float tCurrentA, tCurrentB, tCurrentC;
+    float tCurrentA = 0;
+    float tCurrentB = 0;
+    float tCurrentC = 0;
     float testCurrent, testTotal;
     long lastMillis = millis();
     char key;
@@ -352,11 +353,12 @@ void MenuAmpere()
         tCurrentB = currentCT4 + currentCT5 + currentCT6;
 
         //get current from ADS1115
-        currentCT7 = getIRMS(CurrentGainCT7, 1);
-        currentCT8 = getIRMS(CurrentGainCT8, 2);
-        tCurrentC = currentCT7 + currentCT8;
+        // currentCT7 = getIRMS(CurrentGainCT7, 1);
+        // currentCT8 = getIRMS(CurrentGainCT8, 2);
+        // tCurrentC = currentCT7 + currentCT8;
 
-        totalCurrent = tCurrentA + tCurrentB + tCurrentC;
+        totalCurrent = tCurrentA + tCurrentB;
+        // totalCurrent = tCurrentA + tCurrentB + tCurrentC;
 
         Serial.println("Voltage 1: " + String(voltageA_first) + "V");
         Serial.println("Voltage 2: " + String(voltageA_second) + "V");
@@ -367,8 +369,8 @@ void MenuAmpere()
         Serial.println("Current 4: " + String(currentCT4) + "A");
         Serial.println("Current 5: " + String(currentCT5) + "A");
         Serial.println("Current 6: " + String(currentCT6) + "A");
-        Serial.println("Current 7: " + String(currentCT7) + "A");
-        Serial.println("Current 8: " + String(currentCT8) + "A");
+        // Serial.println("Current 7: " + String(currentCT7) + "A");
+        // Serial.println("Current 8: " + String(currentCT8) + "A");
         Serial.println();
         Serial.println("Total Current: " + String(totalCurrent) + "A");
         Serial.println();
@@ -386,7 +388,7 @@ void MenuAmpere()
         u8g2.setFont(u8g2_font_amstrad_cpc_extended_8f);
         u8g2.setCursor(3, 10);
         u8g2.print("O1:");
-        u8g2.print(testCurrent);
+        u8g2.print(currentCT1);
         u8g2.setCursor(3, 19);
         u8g2.print("O2:");
         u8g2.print(currentCT2);
@@ -402,13 +404,13 @@ void MenuAmpere()
         u8g2.setCursor(72, 28);
         u8g2.print("I6:");
         u8g2.print(currentCT6);
-        u8g2.setCursor(3, 37);
-        u8g2.print("C7:");
-        u8g2.print(currentCT7);
-        u8g2.setCursor(72, 37);
-        u8g2.print("C8:");
-        u8g2.print(currentCT8);
-        u8g2.drawFrame(0, 0, 128, 64);
+        // u8g2.setCursor(3, 37);
+        // u8g2.print("C7:");
+        // u8g2.print(currentCT7);
+        // u8g2.setCursor(72, 37);
+        // u8g2.print("C8:");
+        // u8g2.print(currentCT8);
+        // u8g2.drawFrame(0, 0, 128, 64);
         u8g2.sendBuffer();
 
         relaySwitch(tCurrentA, tCurrentB, tCurrentC, testTotal);
@@ -587,50 +589,50 @@ void MainMenuDisplay()
         Serial.println("1.Monitor Arus");
         break;
     case 2:
-        u8g2.print("2.Cal OUT CTR");
-        Serial.println("2.Cal OUT CTR");
+        u8g2.print("2.Cal OUT A");
+        Serial.println("2.Cal OUT A");
         break;
     case 3:
-        u8g2.print("3.Cal OUT CTS");
-        Serial.println("3.Cal OUT CTS");
+        u8g2.print("3.Cal OUT B");
+        Serial.println("3.Cal OUT B");
         break;
     case 4:
-        u8g2.print("4.Cal OUT CTT");
-        Serial.println("4.Cal OUT CTT");
+        u8g2.print("4.Cal OUT C");
+        Serial.println("4.Cal OUT C");
         break;
     case 5:
-        u8g2.print("5.Cal IN CTR");
-        Serial.println("5.Cal IN CTR");
+        u8g2.print("5.Cal OUT A");
+        Serial.println("5.Cal OUT A");
         break;
     case 6:
-        u8g2.print("6.Cal IN CTS");
-        Serial.println("6.Cal IN CTS");
+        u8g2.print("6.Cal IN B");
+        Serial.println("6.Cal IN B");
         break;
     case 7:
-        u8g2.print("7.Cal IN CTT");
-        Serial.println("7.Cal IN CTT");
+        u8g2.print("7.Cal IN C");
+        Serial.println("7.Cal IN C");
         break;
+    // case 8:
+    //     u8g2.print("8.Cal A CT");
+    //     Serial.println("8.Cal A CT");
+    //     break;
+    // case 7:
+    //     u8g2.print("9.Cal IN C");
+    //     Serial.println("9.Cal IN C");
+    //     break;
     case 8:
-        u8g2.print("8.Cal A CT");
-        Serial.println("8.Cal A CT");
-        break;
-    case 9:
-        u8g2.print("9.Cal B CT");
-        Serial.println("9.Cal B CT");
-        break;
-    case 10:
         u8g2.print("10.Set RL C1");
         Serial.println("10.Set RL C1");
         break;
-    case 11:
+    case 9:
         u8g2.print("11.Set RL C2");
         Serial.println("11.Set RL C2");
         break;
-    case 12:
+    case 10:
         u8g2.print("12.Set RL C3");
         Serial.println("12.Set RL C3");
         break;
-    case 13:
+    case 11:
         u8g2.print("13.Set RL C4");
         Serial.println("13.Set RL C4");
         break;
@@ -677,64 +679,64 @@ char getPressedKey()
     return key;
 }
 
-// void setupSpiffs()
-// {
-//     //clean FS, for testing
-//     //SPIFFS.format();
+void setupSpiffs()
+{
+    //clean FS, for testing
+    //SPIFFS.format();
 
-//     //read configuration from FS json
-//     Serial.println("mounting FS...");
+    //read configuration from FS json
+    Serial.println("mounting FS...");
 
-//     if (SPIFFS.begin())
-//     {
-//         Serial.println("mounted file system");
-//         if (SPIFFS.exists("/config.json"))
-//         {
-//             //file exists, reading and loading
-//             Serial.println("reading config file");
-//             File configFile = SPIFFS.open("/config.json");
-//             if (configFile)
-//             {
-//                 Serial.println("opened config file");
-//                 size_t size = configFile.size();
-//                 // Allocate a buffer to store contents of the file.
-//                 std::unique_ptr<char[]> buf(new char[size]);
+    if (SPIFFS.begin())
+    {
+        Serial.println("mounted file system");
+        if (SPIFFS.exists("/config.json"))
+        {
+            //file exists, reading and loading
+            Serial.println("reading config file");
+            File configFile = SPIFFS.open("/config.json");
+            if (configFile)
+            {
+                Serial.println("opened config file");
+                size_t size = configFile.size();
+                // Allocate a buffer to store contents of the file.
+                std::unique_ptr<char[]> buf(new char[size]);
 
-//                 configFile.readBytes(buf.get(), size);
-//                 DynamicJsonBuffer jsonBuffer;
-//                 JsonObject &json = jsonBuffer.parseObject(buf.get());
-//                 json.printTo(Serial);
-//                 if (json.success())
-//                 {
-//                     Serial.println("\nparsed json");
+                configFile.readBytes(buf.get(), size);
+                DynamicJsonBuffer jsonBuffer;
+                JsonObject &json = jsonBuffer.parseObject(buf.get());
+                json.printTo(Serial);
+                if (json.success())
+                {
+                    Serial.println("\nparsed json");
 
-//                     CurrentGainCT1 = json["CurrentGainCT1"];
-//                     CurrentGainCT2 = json["CurrentGainCT2"];
-//                     CurrentGainCT3 = json["CurrentGainCT3"];
-//                     CurrentGainCT4 = json["CurrentGainCT4"];
-//                     CurrentGainCT5 = json["CurrentGainCT5"];
-//                     CurrentGainCT6 = json["CurrentGainCT6"];
-//                     CurrentGainCT7 = json["CurrentGainCT7"];
-//                     CurrentGainCT8 = json["CurrentGainCT8"];
-//                     RC1 = json["RC1"];
-//                     RC2 = json["RC2"];
-//                     RC3 = json["RC3"];
-//                     RC4 = json["RC4"];
+                    CurrentGainCT1 = json["CurrentGainCT1"];
+                    CurrentGainCT2 = json["CurrentGainCT2"];
+                    CurrentGainCT3 = json["CurrentGainCT3"];
+                    CurrentGainCT4 = json["CurrentGainCT4"];
+                    CurrentGainCT5 = json["CurrentGainCT5"];
+                    CurrentGainCT6 = json["CurrentGainCT6"];
+                    CurrentGainCT7 = json["CurrentGainCT7"];
+                    CurrentGainCT8 = json["CurrentGainCT8"];
+                    RC1 = json["RC1"];
+                    RC2 = json["RC2"];
+                    RC3 = json["RC3"];
+                    RC4 = json["RC4"];
 
-//                     // strcpy(mqtt_server, json["mqtt_server"]);
-//                     // strcpy(mqtt_port, json["mqtt_port"]);
-//                     // strcpy(api_token, json["api_token"]);
-//                 }
-//                 else
-//                 {
-//                     Serial.println("failed to load json config");
-//                 }
-//             }
-//         }
-//     }
-//     else
-//     {
-//         Serial.println("failed to mount FS");
-//     }
-//     //end read
-// }
+                    // strcpy(mqtt_server, json["mqtt_server"]);
+                    // strcpy(mqtt_port, json["mqtt_port"]);
+                    // strcpy(api_token, json["api_token"]);
+                }
+                else
+                {
+                    Serial.println("failed to load json config");
+                }
+            }
+        }
+    }
+    else
+    {
+        Serial.println("failed to mount FS");
+    }
+    //end read
+}
