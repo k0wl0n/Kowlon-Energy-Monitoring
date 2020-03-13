@@ -147,6 +147,8 @@ void setup()
     ADC_1.setGain(GAIN_TWO);
     ADC_1.begin();
 
+    getConfig();
+
     // pinMode(13, OUTPUT);
 
     //Custom Keypad Init
@@ -574,6 +576,7 @@ float MenuSet(float value, String name, int status)
         }
         u8g2.sendBuffer();
     }
+    saveConfig();
     return value;
 }
 
@@ -679,7 +682,37 @@ char getPressedKey()
     return key;
 }
 
-void setupSpiffs()
+void saveConfig()
+{
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &json = jsonBuffer.createObject();
+
+    json["CurrentGainCT1"] = CurrentGainCT1;
+    json["CurrentGainCT2"] = CurrentGainCT2;
+    json["CurrentGainCT3"] = CurrentGainCT3;
+    json["CurrentGainCT4"] = CurrentGainCT4;
+    json["CurrentGainCT5"] = CurrentGainCT5;
+    json["CurrentGainCT6"] = CurrentGainCT6;
+    json["CurrentGainCT7"] = CurrentGainCT7;
+    json["CurrentGainCT8"] = CurrentGainCT8;
+    json["RC1"] = RC1;
+    json["RC2"] = RC2;
+    json["RC3"] = RC3;
+    json["RC4"] = RC4;
+
+    File configFile = SPIFFS.open("/config.json", FILE_WRITE);
+    if (!configFile)
+    {
+        Serial.println("failed to open config file for writing");
+    }
+
+    json.prettyPrintTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+}
+
+void getConfig()
 {
     //clean FS, for testing
     //SPIFFS.format();
@@ -722,10 +755,6 @@ void setupSpiffs()
                     RC2 = json["RC2"];
                     RC3 = json["RC3"];
                     RC4 = json["RC4"];
-
-                    // strcpy(mqtt_server, json["mqtt_server"]);
-                    // strcpy(mqtt_port, json["mqtt_port"]);
-                    // strcpy(api_token, json["api_token"]);
                 }
                 else
                 {
