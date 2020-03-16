@@ -132,6 +132,9 @@ float multiplier = 0.0625F;
 //Riley Setup
 unsigned int RC1 = 5, RC2 = 30, RC3 = 45, RC4 = 70;
 unsigned int RC1_SECOND = 15, RC2_SECOND = 35, RC3_SECOND = 80, RC4_SECOND = 80;
+unsigned long startMillis;
+unsigned long currentMillis;
+const unsigned long period = 3000;
 
 void setup()
 {
@@ -317,6 +320,7 @@ void MenuAmpere()
     float testCurrent, testTotal;
     long lastMillis = millis();
     char key;
+    startMillis = millis(); //initial start time
     while (key != 'B')
     {
         key = getPressedKey();
@@ -458,66 +462,72 @@ float getIRMS(float factor, unsigned int phase)
 
 void relaySwitch(float CurrentInput, float tCurrentB, float tCurrentC, float totalCurrent)
 {
-    //OUTPUT Relay -  1 2 3 BYPASS
-    if (CurrentInput >= 0 && CurrentInput <= 65)
+    currentMillis = millis();                  //get the current "time" (actually the number of milliseconds since the program started)
+    if (currentMillis - startMillis >= period) //test whether the period has elapsed
     {
-        expander_1.digitalWrite(P0, LOW);
-        expander_1.digitalWrite(P1, LOW);
-        expander_1.digitalWrite(P2, LOW);
-    }
-    else if (CurrentInput > 65)
-    {
-        expander_1.digitalWrite(P0, HIGH);
-        expander_1.digitalWrite(P1, HIGH);
-        expander_1.digitalWrite(P2, HIGH);
-    }
+        //OUTPUT Relay -  1 2 3 BYPASS
+        if (CurrentInput >= 0 && CurrentInput <= 65)
+        {
+            expander_1.digitalWrite(P0, LOW);
+            expander_1.digitalWrite(P1, LOW);
+            expander_1.digitalWrite(P2, LOW);
+        }
+        else if (CurrentInput > 65)
+        {
+            expander_1.digitalWrite(P0, HIGH);
+            expander_1.digitalWrite(P1, HIGH);
+            expander_1.digitalWrite(P2, HIGH);
+        }
 
-    //OUTPUT Relay -  5 6 7 8 GEL
-    if (CurrentInput >= 0 && CurrentInput < RC1) //R1
-    {
-        //all OFF
-        expander_1.digitalWrite(P4, HIGH);
-        expander_1.digitalWrite(P5, HIGH);
-        expander_1.digitalWrite(P6, HIGH);
-        expander_1.digitalWrite(P7, HIGH);
-    }
-    else if (CurrentInput >= RC1 && CurrentInput < RC2) //R1 - R2
-    {
-        //5 ON
-        // else OFF
-        expander_1.digitalWrite(P4, LOW);
-        expander_1.digitalWrite(P5, HIGH);
-        expander_1.digitalWrite(P6, HIGH);
-        expander_1.digitalWrite(P7, HIGH);
-    }
-    else if (CurrentInput >= RC2 && CurrentInput < RC3) //R2 - R3
-    {
-        //5 ON
-        //6 ON
-        // else OFF
-        expander_1.digitalWrite(P4, LOW);
-        expander_1.digitalWrite(P5, LOW);
-        expander_1.digitalWrite(P6, HIGH);
-        expander_1.digitalWrite(P7, HIGH);
-    }
-    else if (CurrentInput >= RC3 && CurrentInput < RC4) //R3 - R4
-    {
-        //5 ON
-        //6 ON
-        //7 ON
-        // else OFF
-        expander_1.digitalWrite(P4, LOW);
-        expander_1.digitalWrite(P5, LOW);
-        expander_1.digitalWrite(P6, LOW);
-        expander_1.digitalWrite(P7, HIGH);
-    }
-    else if (CurrentInput > RC4) //R4
-    {
-        //All On
-        expander_1.digitalWrite(P4, LOW);
-        expander_1.digitalWrite(P5, LOW);
-        expander_1.digitalWrite(P6, LOW);
-        expander_1.digitalWrite(P7, LOW);
+        //OUTPUT Relay -  5 6 7 8 GEL
+        if (CurrentInput >= 0 && CurrentInput < RC1) //R1
+        {
+            //all OFF
+            expander_1.digitalWrite(P4, HIGH);
+            expander_1.digitalWrite(P5, HIGH);
+            expander_1.digitalWrite(P6, HIGH);
+            expander_1.digitalWrite(P7, HIGH);
+        }
+        else if (CurrentInput >= RC1 && CurrentInput < RC2) //R1 - R2
+        {
+            //5 ON
+            // else OFF
+            expander_1.digitalWrite(P4, LOW);
+            expander_1.digitalWrite(P5, HIGH);
+            expander_1.digitalWrite(P6, HIGH);
+            expander_1.digitalWrite(P7, HIGH);
+        }
+        else if (CurrentInput >= RC2 && CurrentInput < RC3) //R2 - R3
+        {
+            //5 ON
+            //6 ON
+            // else OFF
+            expander_1.digitalWrite(P4, LOW);
+            expander_1.digitalWrite(P5, LOW);
+            expander_1.digitalWrite(P6, HIGH);
+            expander_1.digitalWrite(P7, HIGH);
+        }
+        else if (CurrentInput >= RC3 && CurrentInput < RC4) //R3 - R4
+        {
+            //5 ON
+            //6 ON
+            //7 ON
+            // else OFF
+            expander_1.digitalWrite(P4, LOW);
+            expander_1.digitalWrite(P5, LOW);
+            expander_1.digitalWrite(P6, LOW);
+            expander_1.digitalWrite(P7, HIGH);
+        }
+        else if (CurrentInput > RC4) //R4
+        {
+            //All On
+            expander_1.digitalWrite(P4, LOW);
+            expander_1.digitalWrite(P5, LOW);
+            expander_1.digitalWrite(P6, LOW);
+            expander_1.digitalWrite(P7, LOW);
+        }
+
+        startMillis = currentMillis;
     }
 }
 
