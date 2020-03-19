@@ -1,3 +1,4 @@
+#include <FS.h> // this needs to be first, or it all crashes and burns...
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
 #include <Arduino.h>
@@ -5,7 +6,6 @@
 #include <SPI.h>
 #include <ATM90E32.h>
 #include <PCF8574.h>
-#include <FS.h>          // this needs to be first, or it all crashes and burns...
 #include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson
 #include <SPIFFS.h>
 
